@@ -2,12 +2,12 @@
 package main
 
 import (
+	"container/heap"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	//"strings"
 )
 
 var URL = "https://backend-challenge-fall-2017.herokuapp.com/orders.json?page="
@@ -15,31 +15,31 @@ var URL = "https://backend-challenge-fall-2017.herokuapp.com/orders.json?page="
 // Structs for JSON unmarshalling
 type Product struct {
 	Title  string
-	Amount int64
+	Amount int
 }
 
 type Order struct {
-	Id        int64
+	Id        int
 	Fulfilled bool
 	Products  []Product
 }
 
 type PageInfo struct {
-	Current_page int64
-	Per_page     int64
-	Total        int64
+	Current_page int
+	Per_page     int
+	Total        int
 }
 
 // The entire JSON object
 type JSONInfo struct {
-	Available_cookies int64
+	Available_cookies int
 	Orders            []Order
 	Pagination        PageInfo
 }
 
 type JSONOutput struct {
-	Remaining_cookies  int64
-	Unfulfilled_orders []int64
+	Remaining_cookies  int
+	Unfulfilled_orders []int
 }
 
 func (order Order) Contains(food string) bool {
@@ -51,10 +51,22 @@ func (order Order) Contains(food string) bool {
 	return false
 }
 
+func (order Order) NumCookies() int {
+	numCookies := 0
+
+	for _, item := range order.Products {
+		if item.Title == "Cookie" {
+			numCookies = item.Amount
+		}
+	}
+
+	return numCookies
+}
+
 func main() {
 
 	// order info
-	var available_cookies int64
+	var available_cookies int
 	var orders []Order
 
 Process:
@@ -82,6 +94,27 @@ Process:
 	fulfillNoCookieOrders(orders)
 	fmt.Println(available_cookies)
 	fmt.Println(orders)
+
+	// TODO implement Priority Queue
+	pq := make(PriorityQueue, len(orders))
+
+	for i := 0; i < len(orders); i++ {
+
+		pq[i] = &orders[i]
+	}
+
+	fmt.Println("BEFORE HEAPINIT")
+	for _, v := range pq {
+
+		fmt.Println(v)
+
+	}
+	fmt.Println()
+	heap.Init(&pq)
+	fmt.Println("AFTER HEAPINIT")
+	for pq.Len() > 0 {
+		fmt.Println(pq.Pop())
+	}
 }
 
 func getPage(pageNum int) (resp *http.Response, err error) {
@@ -99,9 +132,38 @@ func getPage(pageNum int) (resp *http.Response, err error) {
 func fulfillNoCookieOrders(orders []Order) {
 	for i := 0; i < len(orders); i++ {
 		if !orders[i].Contains("Cookie") {
-			// If the order doesn't contain a cookie we set it to fulfilled
+			// If the order doesn't contain a cookie we fulfill the order
 			orders[i].Fulfilled = true
-			fmt.Printf("Fulfilled order %d.\n", orders[i].Id)
 		}
 	}
+}
+
+// Priority Queue implementation
+type PriorityQueue []*Order
+
+func (pq PriorityQueue) Len() int {
+	return len(pq)
+}
+
+func (pq PriorityQueue) Less(i, j int) bool {
+	if pq[i].NumCookies() == pq[j].NumCookies() {
+		return pq[i].Id < pq[j].Id
+	} else {
+		return pq[i].NumCookies() > pq[j].NumCookies()
+	}
+}
+
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *PriorityQueue) Push(order interface{}) {
+	*pq = append(*pq, order.(*Order))
+}
+
+func (pq *PriorityQueue) Pop() interface{} {
+	element := (*pq)[0]
+	*pq = (*pq)[0:len(*pq)]
+
+	return element
 }
