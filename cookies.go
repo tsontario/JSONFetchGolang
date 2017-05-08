@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strconv"
 )
 
@@ -42,8 +43,8 @@ Process:
 		}
 	} // end Process
 
-	// Fulfill orders
-	fulfillNoCookieOrders(orders)
+	// Fulfill orders and heap the rest
+	fulfillOrdersWithoutFOOD(orders)
 	unfulfilledOrders := PriorityQueue{}
 
 	for i := 0; i < len(orders); i++ {
@@ -62,13 +63,14 @@ Process:
 		}
 	}
 
-	output JSONOutput
+	output := JSONOutput{}
 	output.Remaining_cookies = available_cookies
 	for _, v := range orders {
 		if !v.Fulfilled {
 			output.Unfulfilled_orders = append(output.Unfulfilled_orders, v.Id)
 		}
 	}
+	sort.Ints(output.Unfulfilled_orders)
 
 	res, _ := json.Marshal(output)
 	fmt.Println(string(res))
@@ -88,7 +90,7 @@ func getPage(pageNum int) *http.Response {
 	return resp
 }
 
-func fulfillNoCookieOrders(orders []Order) {
+func fulfillOrdersWithoutFOOD(orders []Order) {
 	for i := 0; i < len(orders); i++ {
 		if !orders[i].Contains(FOOD) {
 			orders[i].Fulfilled = true
