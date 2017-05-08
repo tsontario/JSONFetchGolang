@@ -23,6 +23,7 @@ func main() {
 	// Get the data
 Process:
 	for page := 1; ; page++ {
+
 		resp := getPage(page)
 		htmlData, _ := ioutil.ReadAll(resp.Body)
 
