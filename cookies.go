@@ -10,57 +10,8 @@ import (
 	"strconv"
 )
 
-var URL = "https://backend-challenge-fall-2017.herokuapp.com/orders.json?page="
-var FOOD = "Cookie"
-
-// Structs for JSON unmarshalling
-type Product struct {
-	Title  string
-	Amount int
-}
-
-type Order struct {
-	Id        int
-	Fulfilled bool
-	Products  []Product
-}
-
-type PageInfo struct {
-	Current_page int
-	Per_page     int
-	Total        int
-}
-
-// The entire JSON object
-type JSONInfo struct {
-	Available_cookies int
-	Orders            []Order
-	Pagination        PageInfo
-}
-
-type JSONOutput struct {
-	Remaining_cookies  int
-	Unfulfilled_orders []int
-}
-
-func (order Order) Contains(food string) bool {
-	for _, product := range order.Products {
-		if product.Title == food {
-			return true
-		}
-	}
-	return false
-}
-
-func (order *Order) NumCookies() int {
-	numCookies := 0
-	for _, item := range order.Products {
-		if item.Title == FOOD {
-			numCookies = item.Amount
-		}
-	}
-	return numCookies
-}
+const URL = "https://backend-challenge-fall-2017.herokuapp.com/orders.json?page="
+const FOOD = "Cookie"
 
 func main() {
 
@@ -68,12 +19,13 @@ func main() {
 	var available_cookies int
 	var orders []Order
 
+	// Get the data
 Process:
 	for page := 1; ; page++ {
 		resp := getPage(page)
 		htmlData, _ := ioutil.ReadAll(resp.Body)
 
-		var jsonData JSONInfo
+		var jsonData JSONInput
 		error := json.Unmarshal(htmlData, &jsonData)
 
 		if error != nil {
@@ -90,9 +42,8 @@ Process:
 		}
 	} // end Process
 
+	// Fulfill orders
 	fulfillNoCookieOrders(orders)
-	fmt.Println(available_cookies)
-
 	unfulfilledOrders := PriorityQueue{}
 
 	for i := 0; i < len(orders); i++ {
@@ -111,7 +62,7 @@ Process:
 		}
 	}
 
-	output := JSONOutput{}
+	output JSONOutput
 	output.Remaining_cookies = available_cookies
 	for _, v := range orders {
 		if !v.Fulfilled {
@@ -119,7 +70,8 @@ Process:
 		}
 	}
 
-	fmt.Println(output)
+	res, _ := json.Marshal(output)
+	fmt.Println(string(res))
 }
 
 func getPage(pageNum int) *http.Response {
@@ -130,6 +82,8 @@ func getPage(pageNum int) *http.Response {
 
 	if err != nil {
 		fmt.Printf("%s\n", err)
+	} else if resp.StatusCode != 200 {
+		fmt.Printf("Response Error Code %s\n", resp.StatusCode)
 	}
 	return resp
 }
@@ -137,41 +91,7 @@ func getPage(pageNum int) *http.Response {
 func fulfillNoCookieOrders(orders []Order) {
 	for i := 0; i < len(orders); i++ {
 		if !orders[i].Contains(FOOD) {
-			// If the order doesn't contain a cookie we set it to fulfilled
 			orders[i].Fulfilled = true
 		}
 	}
-}
-
-//////////////////////////////
-// Priority Queue
-//////////////////////////////
-type PriorityQueue []*Order
-
-func (pq PriorityQueue) Len() int { return len(pq) }
-
-func (pq PriorityQueue) Less(i, j int) bool {
-	// Establish ordering. Ties for numCookies are ordered ascending by ID
-	if pq[i].NumCookies() == pq[j].NumCookies() {
-		return pq[i].Id < pq[j].Id
-	}
-	return (pq[i].NumCookies() > pq[j].NumCookies())
-
-}
-
-func (pq PriorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-}
-
-func (pq *PriorityQueue) Push(x interface{}) {
-	order := x.(*Order)
-	*pq = append(*pq, order)
-}
-
-func (pq *PriorityQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	order := old[n-1]
-	*pq = old[0 : n-1]
-	return order
 }
