@@ -48,14 +48,14 @@ Process:
 	unfulfilledOrders := PriorityQueue{}
 
 	for i := 0; i < len(orders); i++ {
-		if orders[i].NumCookies() != 0 && !orders[i].Fulfilled {
+		if orders[i].NumItem(FOOD) != 0 && !orders[i].Fulfilled {
 			heap.Push(&unfulfilledOrders, &orders[i])
 		}
 	}
 
 	for len(unfulfilledOrders) > 0 && available_cookies > 0 {
 		item := heap.Pop(&unfulfilledOrders).(*Order)
-		cookies := item.NumCookies()
+		cookies := item.NumItem(FOOD)
 
 		if cookies <= available_cookies {
 			available_cookies -= cookies

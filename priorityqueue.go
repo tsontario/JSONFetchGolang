@@ -9,10 +9,10 @@ func (pq PriorityQueue) Len() int { return len(pq) }
 
 func (pq PriorityQueue) Less(i, j int) bool {
 	// Establish ordering. Ties for numCookies are ordered ascending by ID
-	if pq[i].NumCookies() == pq[j].NumCookies() {
+	if pq[i].NumItem(FOOD) == pq[j].NumItem(FOOD) {
 		return pq[i].Id < pq[j].Id
 	}
-	return (pq[i].NumCookies() > pq[j].NumCookies())
+	return (pq[i].NumItem(FOOD) > pq[j].NumItem(FOOD))
 
 }
 

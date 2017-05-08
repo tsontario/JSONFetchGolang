@@ -29,21 +29,21 @@ type JSONOutput struct {
 	Unfulfilled_orders []int
 }
 
-func (order *Order) Contains(food string) bool {
+func (order *Order) Contains(item string) bool {
 	for _, product := range order.Products {
-		if product.Title == food {
+		if product.Title == item {
 			return true
 		}
 	}
 	return false
 }
 
-func (order *Order) NumCookies() int {
-	numCookies := 0
+func (order *Order) NumItem(productName string) int {
+	numItem := 0
 	for _, item := range order.Products {
-		if item.Title == FOOD {
-			numCookies = item.Amount
+		if item.Title == productName {
+			numItem = item.Amount
 		}
 	}
-	return numCookies
+	return numItem
 }
